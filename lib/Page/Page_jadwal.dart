@@ -24,6 +24,19 @@ class _CatatanPageState extends State<CatatanPage> {
     super.initState();
     _loadData();
     _initNotif();
+
+    // ✅ TAMBAHKAN LISTENER UNTUK AUTO-UPDATE
+    _dataRepository.addListener(_onDataChanged);
+  }
+
+  // ✅ METHOD BARU: Listen perubahan data
+  void _onDataChanged() {
+    print('🔄 Data berubah di CatatanPage! Memperbarui UI...');
+    if (mounted) {
+      setState(() {
+        _loadData();
+      });
+    }
   }
 
   void _loadData() {
@@ -31,6 +44,10 @@ class _CatatanPageState extends State<CatatanPage> {
       jadwalOtomatis = _dataRepository.jadwalANC;
       riwayat = _dataRepository.riwayatKunjungan;
       _lastUpdatedRiwayat = DateTime.now();
+
+      print('📥 Data dimuat ulang di CatatanPage:');
+      print('   - Jadwal ANC: ${jadwalOtomatis.length}');
+      print('   - Riwayat: ${riwayat.length}');
     });
   }
 
@@ -66,6 +83,13 @@ class _CatatanPageState extends State<CatatanPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    // ✅ JANGAN LUPA REMOVE LISTENER
+    _dataRepository.removeListener(_onDataChanged);
+    super.dispose();
   }
 
   Future<void> _initNotif() async {
@@ -112,8 +136,22 @@ class _CatatanPageState extends State<CatatanPage> {
     }
   }
 
-  String _getLastUpdatedText() {
-    return 'Terakhir diperbarui ${_formatLastUpdated()}';
+  // ✅ PERBAIKI: Tampilkan waktu real-time
+  String _getLastUpdatedTextRealtime() {
+    final now = DateTime.now();
+    final difference = now.difference(_lastUpdatedRiwayat);
+
+    if (difference.inSeconds < 60) {
+      return 'Baru saja diperbarui';
+    } else if (difference.inMinutes < 1) {
+      return '${difference.inSeconds} detik yang lalu';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} menit yang lalu';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} jam yang lalu';
+    } else {
+      return _formatLastUpdated();
+    }
   }
 
   // FUNGSI BARU: Tampilkan dialog detail riwayat
@@ -573,16 +611,32 @@ class _CatatanPageState extends State<CatatanPage> {
                             ),
                           ],
                         ),
-                        IconButton(
-                          onPressed: _refreshRiwayatData,
-                          icon: Icon(
-                            Icons.refresh,
-                            color: Colors.blue[600],
-                            size: 20,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          tooltip: 'Refresh Riwayat',
+                        Row(
+                          children: [
+                            // ✅ TAMBAH INDICATOR REAL-TIME
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _isToday(_lastUpdatedRiwayat)
+                                    ? Colors.green
+                                    : Colors.orange,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            IconButton(
+                              onPressed: _refreshRiwayatData,
+                              icon: Icon(
+                                Icons.refresh,
+                                color: Colors.blue[600],
+                                size: 20,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              tooltip: 'Refresh Riwayat',
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -604,7 +658,7 @@ class _CatatanPageState extends State<CatatanPage> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            _getLastUpdatedText(),
+                            _getLastUpdatedTextRealtime(), // ✅ GUNAKAN YANG REAL-TIME
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
@@ -756,7 +810,7 @@ class _CatatanPageState extends State<CatatanPage> {
         riwayat['gambar'].toString() != 'null';
 
     return GestureDetector(
-      onTap: () => _showRiwayatDetail(riwayat), // TAMBAH ON TAP
+      onTap: () => _showRiwayatDetail(riwayat),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Row(
@@ -825,7 +879,6 @@ class _CatatanPageState extends State<CatatanPage> {
     );
   }
 
-  // ... method lainnya (_buildNotifikasiSection, _buildReminderToggle, dll) tetap sama
   // GABUNGAN: Widget untuk section notifikasi yang menyatu
   Widget _buildNotifikasiSection() {
     return Container(

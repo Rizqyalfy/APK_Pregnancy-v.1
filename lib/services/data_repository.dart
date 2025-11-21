@@ -24,10 +24,10 @@ class DataRepository with ChangeNotifier {
     'tinggiFundus': '',
   };
 
-  // Jadwal ANC - Kosongkan data dummy
+  // Jadwal ANC - KOSONG tanpa data dummy
   List<Map<String, String>> _jadwalANC = [];
 
-  // Riwayat Kunjungan - Kosongkan data dummy
+  // Riwayat Kunjungan - KOSONG tanpa data dummy
   List<Map<String, dynamic>> riwayatKunjungan = [];
 
   // =======================================================
@@ -306,15 +306,13 @@ class DataRepository with ChangeNotifier {
     final usiaKehamilanStr = dataIbu['usiaKehamilan']?.toString() ?? '';
     int mingguAwal = _extractMingguKehamilan(usiaKehamilanStr);
 
-    // Jika tidak ada data, gunakan default
+    // Jika tidak ada data, return kosong (TIDAK GENERATE OTOMATIS)
     if (mingguAwal == 0) {
-      mingguAwal = 8; // Default minggu 8
-      print(
-        '⚠️ Usia kehamilan tidak ditemukan, gunakan default: $mingguAwal minggu',
-      );
-    } else {
-      print('✅ Gunakan usia kehamilan: $mingguAwal minggu');
+      print('⚠️ Usia kehamilan tidak ditemukan, jadwal ANC tetap kosong');
+      return;
     }
+
+    print('✅ Gunakan usia kehamilan: $mingguAwal minggu');
 
     _jadwalANC.clear();
 
@@ -499,6 +497,14 @@ class DataRepository with ChangeNotifier {
     }
   }
 
+  /// Clear semua jadwal ANC
+  Future<void> clearJadwalANC() async {
+    _jadwalANC.clear();
+    await _saveToStorage();
+    notifyListeners();
+    print('🗑️ Semua jadwal ANC dihapus');
+  }
+
   /// Get jadwal ANC by index
   Map<String, String>? getJadwalByIndex(int index) {
     if (index >= 0 && index < _jadwalANC.length) {
@@ -672,6 +678,11 @@ class DataRepository with ChangeNotifier {
   /// Cek apakah ada data
   bool hasData() {
     return riwayatKunjungan.isNotEmpty || _jadwalANC.isNotEmpty;
+  }
+
+  /// Cek apakah ada jadwal ANC
+  bool hasJadwalANC() {
+    return _jadwalANC.isNotEmpty;
   }
 
   /// Get statistik real dari data
