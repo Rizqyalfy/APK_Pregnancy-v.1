@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
-// HAPUS: import 'package:image_picker_web/image_picker_web.dart'; // Untuk web
 import '../services/data_repository.dart';
 
 class InputDataIbuPage extends StatefulWidget {
@@ -81,101 +80,234 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Input Data Ibu & Kelola Jadwal ANC"),
-        backgroundColor: Colors.blueAccent,
+        title: const Text(
+          'Input Data Ibu Hamil',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF4A90E2),
         foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _resetForm,
+            tooltip: 'Reset Form',
+          ),
+        ],
       ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeaderSection(),
-              const SizedBox(height: 20),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Container(
+          color: Colors.grey[50],
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // CARD INFORMASI
+                  _buildInfoCard(),
+                  const SizedBox(height: 20),
 
-              // SECTION KELOLA JADWAL ANC
-              _buildKelolaJadwalSection(jadwalANC),
-              const SizedBox(height: 20),
+                  // CARD KELOLA JADWAL ANC
+                  _buildKelolaJadwalSection(jadwalANC),
+                  const SizedBox(height: 20),
 
-              _buildDateSection(),
-              const SizedBox(height: 20),
-              _buildDataHarianSection(),
-              const SizedBox(height: 20),
-              _buildANCSection(),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                  // CARD TANGGAL PEMERIKSAAN
+                  _buildSectionCard(
+                    title: 'Tanggal Pemeriksaan',
+                    icon: Icons.calendar_today,
+                    color: Colors.blue,
+                    children: [_buildDatePickerField()],
                   ),
-                  onPressed: _isLoading ? null : _saveData,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                  const SizedBox(height: 20),
+
+                  // CARD DATA HARIAN
+                  _buildDataHarianSection(),
+                  const SizedBox(height: 20),
+
+                  // CARD PEMERIKSAAN ANC
+                  _buildANCSection(),
+                  const SizedBox(height: 20),
+
+                  // CARD FOTO USG
+                  _buildUSGSection(),
+                  const SizedBox(height: 30),
+
+                  // TOMBOL AKSI
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(color: Colors.grey[400]!),
+                          ),
+                          child: const Text(
+                            'BATAL',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey,
                             ),
                           ),
-                        )
-                      : const Text(
-                          "Simpan Data Pemeriksaan",
-                          style: TextStyle(fontSize: 16, color: Colors.white),
                         ),
-                ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _saveData,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4A90E2),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            elevation: 2,
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Text(
+                                  'SIMPAN DATA',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                ],
               ),
-              const SizedBox(height: 20),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // SECTION KELOLA JADWAL ANC
-  Widget _buildKelolaJadwalSection(List<Map<String, String>> jadwalANC) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.calendar_today, color: Colors.blue[700]),
-                const SizedBox(width: 8),
-                const Text(
-                  "Kelola Jadwal ANC",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+  // =======================================================
+  // WIDGET BUILDING METHODS - NEW UI
+  // =======================================================
+
+  Widget _buildInfoCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue[100]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info, color: Colors.blue[700]),
+              const SizedBox(width: 8),
+              Text(
+                'Informasi Input Data',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[800],
+                  fontSize: 16,
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // FORM TAMBAH/EDIT JADWAL
-            _buildJadwalForm(),
-            const SizedBox(height: 16),
-
-            // LIST JADWAL YANG SUDAH ADA
-            _buildJadwalList(jadwalANC),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Lengkapi data kesehatan Anda dan kelola jadwal ANC. Data yang disimpan akan digunakan untuk memantau perkembangan kehamilan.',
+            style: TextStyle(color: Colors.blue[700], fontSize: 14),
+          ),
+        ],
       ),
     );
   }
 
-  // FORM UNTUK TAMBAH/EDIT JADWAL
+  Widget _buildSectionCard({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required List<Widget> children,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: color),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(children: children),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKelolaJadwalSection(List<Map<String, String>> jadwalANC) {
+    return _buildSectionCard(
+      title: 'Kelola Jadwal ANC',
+      icon: Icons.calendar_today,
+      color: Colors.purple,
+      children: [
+        // FORM TAMBAH/EDIT JADWAL
+        _buildJadwalForm(),
+        const SizedBox(height: 16),
+
+        // LIST JADWAL YANG SUDAH ADA
+        _buildJadwalList(jadwalANC),
+      ],
+    );
+  }
+
   Widget _buildJadwalForm() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -191,11 +323,10 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.blueAccent,
+              color: Colors.purple,
             ),
           ),
           const SizedBox(height: 16),
-
           _buildJadwalTextField(
             'Minggu Ke-',
             mingguController,
@@ -223,7 +354,6 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
             maxLines: 2,
           ),
           const SizedBox(height: 16),
-
           Row(
             children: [
               Expanded(
@@ -277,13 +407,14 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,
-        prefixIcon: Icon(icon, color: Colors.blueAccent),
+        prefixIcon: Icon(icon, color: Colors.purple),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        filled: true,
+        fillColor: Colors.white,
       ),
     );
   }
 
-  // LIST JADWAL ANC
   Widget _buildJadwalList(List<Map<String, String>> jadwalANC) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,8 +429,9 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
           final jadwal = entry.value;
           return Card(
             margin: const EdgeInsets.symmetric(vertical: 4),
+            elevation: 1,
             child: ListTile(
-              leading: const Icon(Icons.event, color: Colors.blue),
+              leading: const Icon(Icons.event, color: Colors.purple),
               title: Text(
                 jadwal['judul']!,
                 style: const TextStyle(fontWeight: FontWeight.w600),
@@ -340,6 +472,331 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
       ],
     );
   }
+
+  Widget _buildDatePickerField() {
+    return TextFormField(
+      readOnly: true,
+      decoration: InputDecoration(
+        labelText: 'Tanggal Pemeriksaan',
+        hintText: 'Pilih tanggal',
+        prefixIcon: const Icon(Icons.calendar_today, color: Colors.blue),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        filled: true,
+        fillColor: Colors.grey[50],
+      ),
+      onTap: _selectDate,
+      controller: TextEditingController(
+        text:
+            '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+      ),
+    );
+  }
+
+  Widget _buildDataHarianSection() {
+    return _buildSectionCard(
+      title: 'Data Harian/Mingguan',
+      icon: Icons.monitor_heart,
+      color: Colors.green,
+      children: [
+        _buildTextField(
+          controller: tekananDarahController,
+          label: 'Tekanan Darah (mmHg)',
+          hint: 'Contoh: 120/80',
+          icon: Icons.favorite,
+          isRequired: true,
+        ),
+        const SizedBox(height: 12),
+        _buildTextField(
+          controller: beratBadanController,
+          label: 'Berat Badan (kg)',
+          hint: 'Contoh: 55.5',
+          icon: Icons.monitor_weight,
+          keyboardType: TextInputType.number,
+          isRequired: true,
+        ),
+        const SizedBox(height: 12),
+        _buildTextField(
+          controller: keluhanController,
+          label: 'Keluhan',
+          hint: 'Tuliskan keluhan yang dirasakan',
+          icon: Icons.health_and_safety,
+          maxLines: 3,
+        ),
+        const SizedBox(height: 12),
+        _buildTextField(
+          controller: pergerakanJaninController,
+          label: 'Pergerakan Janin',
+          hint: 'Deskripsi pergerakan janin',
+          icon: Icons.child_care,
+          maxLines: 2,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildANCSection() {
+    return _buildSectionCard(
+      title: 'Catatan Pemeriksaan ANC',
+      icon: Icons.medical_services,
+      color: Colors.orange,
+      children: [
+        _buildDropdownField("Jenis Kunjungan", _selectedKunjungan, [
+          'Kunjungan Rutin',
+          'Kunjungan Darurat',
+          'Kontrol Hasil Lab',
+          'USG',
+        ], Icons.assignment),
+        const SizedBox(height: 12),
+        _buildDropdownField("Trimester", _selectedTrimester, [
+          'Trimester I',
+          'Trimester II',
+          'Trimester III',
+        ], Icons.timeline),
+        const SizedBox(height: 12),
+        _buildTextField(
+          controller: hasilLabController,
+          label: 'Hasil Lab',
+          hint: 'Hasil pemeriksaan laboratorium',
+          icon: Icons.science,
+          maxLines: 2,
+        ),
+        const SizedBox(height: 12),
+        _buildDropdownField("Imunisasi TT", _selectedImunisasiTT, [
+          'Belum',
+          'TT1',
+          'TT2',
+          'TT3',
+          'TT4',
+          'TT5',
+          'Lengkap',
+        ], Icons.vaccines),
+        const SizedBox(height: 12),
+        _buildTextField(
+          controller: catatanANCController,
+          label: 'Catatan Tambahan ANC',
+          hint: 'Catatan lain dari dokter/bidan',
+          icon: Icons.note_add,
+          maxLines: 4,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUSGSection() {
+    bool hasImage = kIsWeb ? _webFotoUSG != null : _fotoUSG != null;
+
+    return _buildSectionCard(
+      title: 'Hasil USG',
+      icon: Icons.photo_camera,
+      color: Colors.red,
+      children: [
+        _buildTextField(
+          controller: hasilUSGController,
+          label: 'Deskripsi Hasil USG',
+          hint: 'Deskripsi hasil USG',
+          icon: Icons.description,
+          maxLines: 3,
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          "Foto USG",
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          height: 200,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.grey[50],
+          ),
+          child: !hasImage
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.photo_camera,
+                      size: 50,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      kIsWeb ? "Upload foto USG" : "Belum ada foto USG",
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: _uploadFoto,
+                      icon: const Icon(Icons.add_photo_alternate),
+                      label: const Text("Upload Foto USG"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                )
+              : Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: kIsWeb
+                          ? Image.memory(
+                              _webFotoUSG!,
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.file(
+                              _fotoUSG!,
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: CircleAvatar(
+                        backgroundColor: Colors.black54,
+                        radius: 16,
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                          onPressed: () => setState(() {
+                            if (kIsWeb) {
+                              _webFotoUSG = null;
+                            } else {
+                              _fotoUSG = null;
+                            }
+                          }),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+        if (hasImage) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _uploadFoto,
+              icon: const Icon(Icons.camera_alt),
+              label: const Text("Ganti Foto"),
+              style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    bool isRequired = false,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              label,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            if (isRequired)
+              const Text(" *", style: TextStyle(color: Colors.red)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(icon, color: Colors.blue),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            filled: true,
+            fillColor: Colors.grey[50],
+          ),
+          validator: (value) {
+            if (isRequired && (value == null || value.isEmpty)) {
+              return '$label harus diisi';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdownField(
+    String label,
+    String value,
+    List<String> items,
+    IconData icon,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade400),
+          ),
+          child: ListTile(
+            leading: Icon(icon, color: Colors.blue),
+            title: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: value,
+                isExpanded: true,
+                items: items
+                    .map(
+                      (String item) => DropdownMenuItem<String>(
+                        value: item,
+                        child: Text(item),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    if (newValue != null) {
+                      if (label == "Jenis Kunjungan")
+                        _selectedKunjungan = newValue;
+                      else if (label == "Imunisasi TT")
+                        _selectedImunisasiTT = newValue;
+                      else if (label == "Trimester")
+                        _selectedTrimester = newValue;
+                    }
+                  });
+                },
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // =======================================================
+  // EXISTING METHODS (Tetap sama)
+  // =======================================================
 
   void _editJadwal(int index, Map<String, String> jadwal) {
     setState(() {
@@ -423,311 +880,35 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
     });
   }
 
-  Widget _buildHeaderSection() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 8),
-          const Text(
-            'Lengkapi data kesehatan Anda dan kelola jadwal ANC',
-            style: TextStyle(color: Colors.blueGrey, fontSize: 14),
-          ),
-        ],
-      ),
-    );
+  void _resetForm() {
+    _formKey.currentState!.reset();
+    tekananDarahController.clear();
+    beratBadanController.clear();
+    keluhanController.clear();
+    pergerakanJaninController.clear();
+    hasilLabController.clear();
+    hasilUSGController.clear();
+    catatanANCController.clear();
+    _selectedDate = DateTime.now();
+    _selectedKunjungan = 'Kunjungan Rutin';
+    _selectedImunisasiTT = 'Belum';
+    _selectedTrimester = 'Trimester I';
+    if (kIsWeb) {
+      _webFotoUSG = null;
+    } else {
+      _fotoUSG = null;
+    }
+    _resetJadwalForm();
   }
 
-  Widget _buildDateSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Tanggal Pemeriksaan',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.blueAccent,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.calendar_today, color: Colors.blue),
-            title: Text(
-              '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            trailing: const Icon(Icons.arrow_drop_down),
-            onTap: _selectDate,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDataHarianSection() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.monitor_heart, color: Colors.green[700]),
-                const SizedBox(width: 8),
-                const Text(
-                  "Data Harian/Mingguan",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _inputField(
-              "Tekanan Darah (mmHg)",
-              tekananDarahController,
-              Icons.favorite,
-              isRequired: true,
-              hintText: "Contoh: 120/80",
-            ),
-            _inputField(
-              "Berat Badan (kg)",
-              beratBadanController,
-              Icons.monitor_weight,
-              isRequired: true,
-              keyboardType: TextInputType.number,
-            ),
-            _inputField(
-              "Keluhan",
-              keluhanController,
-              Icons.health_and_safety,
-              maxLines: 3,
-              hintText: "Tuliskan keluhan yang dirasakan",
-            ),
-            _inputField(
-              "Pergerakan Janin",
-              pergerakanJaninController,
-              Icons.child_care,
-              maxLines: 2,
-              hintText: "Deskripsi pergerakan janin",
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildANCSection() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.medical_services, color: Colors.purple[700]),
-                const SizedBox(width: 8),
-                const Text(
-                  "Catatan Pemeriksaan ANC",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildDropdownField("Jenis Kunjungan", _selectedKunjungan, [
-              'Kunjungan Rutin',
-              'Kunjungan Darurat',
-              'Kontrol Hasil Lab',
-              'USG',
-            ], Icons.assignment),
-            const SizedBox(height: 12),
-            _buildDropdownField("Trimester", _selectedTrimester, [
-              'Trimester I',
-              'Trimester II',
-              'Trimester III',
-            ], Icons.timeline),
-            const SizedBox(height: 12),
-            _inputField(
-              "Hasil Lab",
-              hasilLabController,
-              Icons.science,
-              maxLines: 2,
-              hintText: "Hasil pemeriksaan laboratorium",
-            ),
-            const SizedBox(height: 12),
-            _buildUSGSection(),
-            const SizedBox(height: 12),
-            _buildDropdownField("Imunisasi TT", _selectedImunisasiTT, [
-              'Belum',
-              'TT1',
-              'TT2',
-              'TT3',
-              'TT4',
-              'TT5',
-              'Lengkap',
-            ], Icons.vaccines),
-            const SizedBox(height: 12),
-            _inputField(
-              "Catatan Tambahan ANC",
-              catatanANCController,
-              Icons.note_add,
-              maxLines: 4,
-              hintText: "Catatan lain dari dokter/bidan",
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUSGSection() {
-    bool hasImage = kIsWeb ? _webFotoUSG != null : _fotoUSG != null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Hasil USG",
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: hasilUSGController,
-          maxLines: 2,
-          decoration: InputDecoration(
-            hintText: "Deskripsi hasil USG",
-            prefixIcon: const Icon(Icons.description, color: Colors.blueAccent),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          "Foto USG",
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          height: 200,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.grey[50],
-          ),
-          child: !hasImage
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.photo_camera,
-                      size: 50,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      kIsWeb ? "Upload foto USG" : "Belum ada foto USG",
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: _uploadFoto,
-                      icon: const Icon(Icons.add_photo_alternate),
-                      label: const Text("Upload Foto USG"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                )
-              : Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: kIsWeb
-                          ? Image.memory(
-                              _webFotoUSG!,
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                            )
-                          : Image.file(
-                              _fotoUSG!,
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.black54,
-                        radius: 16,
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.close,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                          onPressed: () => setState(() {
-                            if (kIsWeb) {
-                              _webFotoUSG = null;
-                            } else {
-                              _fotoUSG = null;
-                            }
-                          }),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-        if (hasImage) ...[
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _uploadFoto,
-              icon: const Icon(Icons.camera_alt),
-              label: const Text("Ganti Foto"),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.blueAccent,
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  // PERBAIKAN: Hapus penggunaan ImagePickerWeb
   Future<void> _uploadFoto() async {
     if (kIsWeb) {
-      // Untuk web, gunakan image_picker biasa atau nonaktifkan fitur upload
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Fitur upload gambar untuk web sedang tidak tersedia'),
         ),
       );
     } else {
-      // Untuk mobile, gunakan image_picker biasa
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         maxWidth: 1200,
@@ -738,109 +919,6 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
         setState(() => _fotoUSG = File(image.path));
       }
     }
-  }
-
-  Widget _inputField(
-    String label,
-    TextEditingController controller,
-    IconData icon, {
-    bool isRequired = false,
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
-    String hintText = "",
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (isRequired)
-                const Text(" *", style: TextStyle(color: Colors.red)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          TextFormField(
-            controller: controller,
-            keyboardType: keyboardType,
-            maxLines: maxLines,
-            decoration: InputDecoration(
-              hintText: hintText,
-              prefixIcon: Icon(icon, color: Colors.blueAccent),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            validator: (value) {
-              if (isRequired && (value == null || value.isEmpty))
-                return '$label wajib diisi';
-              return null;
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDropdownField(
-    String label,
-    String value,
-    List<String> items,
-    IconData icon,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade400),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            leading: Icon(icon, color: Colors.blueAccent),
-            title: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: value,
-                isExpanded: true,
-                items: items
-                    .map(
-                      (String item) => DropdownMenuItem<String>(
-                        value: item,
-                        child: Text(item),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    if (newValue != null) {
-                      if (label == "Jenis Kunjungan")
-                        _selectedKunjungan = newValue;
-                      else if (label == "Imunisasi TT")
-                        _selectedImunisasiTT = newValue;
-                      else if (label == "Trimester")
-                        _selectedTrimester = newValue;
-                    }
-                  });
-                },
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
   }
 
   Future<void> _selectDate() async {
@@ -966,17 +1044,21 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Berhasil"),
-        content: const Text(
-          "Data berhasil disimpan dan sudah terupdate di dashboard.",
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Berhasil'),
+          ],
         ),
+        content: const Text('Data kunjungan berhasil disimpan.'),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
+              Navigator.of(context).pop();
+              Navigator.of(context).pop(true);
             },
-            child: const Text("OK"),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -987,12 +1069,18 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Error"),
+        title: const Row(
+          children: [
+            Icon(Icons.error, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Error'),
+          ],
+        ),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
+            child: const Text('OK'),
           ),
         ],
       ),
