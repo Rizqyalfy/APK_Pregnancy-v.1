@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'Page/Page_pemantauan.dart';
 import 'Page/Page_jadwal.dart';
 import 'Page/Page_edukasi.dart';
-//import 'Page/Page_profil_jurnal.dart';
+// import 'Page/Page_profil_jurnal.dart';
 
 void main() {
   runApp(const MyPregnancyCareApp());
@@ -43,11 +43,11 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [
-    DashboardPage(),
-    CatatanPage(),
-    EdukasiPage(),
-    // ProfilJurnalPage(),
+  final List<Widget> _pages = [
+    const DashboardPage(), // Ganti DashboardPage() dengan PemantauanPage()
+    const CatatanPage(),
+    const EdukasiPage(),
+    // const ProfilJurnalPage(),
   ];
 
   @override
