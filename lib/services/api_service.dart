@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
+  // BENAR - sesuaikan dengan web server
   static String baseUrl = "http://192.168.1.5/my_pregnancy_api";
 
   /// POST data ibu ke server
