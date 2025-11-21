@@ -189,12 +189,6 @@ class DataRepository with ChangeNotifier {
     // Update data ibu dengan data terbaru
     await _updateDataIbu(detail);
 
-    // Generate jadwal ANC otomatis jika belum ada
-    if (_jadwalANC.isEmpty) {
-      _generateJadwalANCOtomatis();
-    }
-
-    // Simpan ke storage dan notify
     await _saveToStorage();
     notifyListeners();
 
@@ -213,11 +207,6 @@ class DataRepository with ChangeNotifier {
     };
 
     riwayatKunjungan.insert(0, newRiwayat);
-
-    // Generate jadwal ANC otomatis jika belum ada
-    if (_jadwalANC.isEmpty) {
-      _generateJadwalANCOtomatis();
-    }
 
     await _saveToStorage();
     notifyListeners();
@@ -286,143 +275,12 @@ class DataRepository with ChangeNotifier {
   }
 
   // =======================================================
-  // METHOD UNTUK JADWAL ANC - PERBAIKAN
+  // METHOD UNTUK JADWAL ANC - TANPA DATA STANDAR
   // =======================================================
 
-  /// Get semua jadwal ANC - GENERATE OTOMATIS JIKA KOSONG
+  /// Get semua jadwal ANC - TIDAK ADA GENERATE OTOMATIS
   List<Map<String, String>> get jadwalANC {
-    // Jika jadwal kosong, generate otomatis berdasarkan data yang ada
-    if (_jadwalANC.isEmpty) {
-      _generateJadwalANCOtomatis();
-    }
     return List.from(_jadwalANC);
-  }
-
-  /// Generate jadwal ANC otomatis berdasarkan usia kehamilan yang ada
-  void _generateJadwalANCOtomatis() {
-    print('🔄 Generate jadwal ANC otomatis...');
-
-    // Coba ambil usia kehamilan dari data ibu
-    final usiaKehamilanStr = dataIbu['usiaKehamilan']?.toString() ?? '';
-    int mingguAwal = _extractMingguKehamilan(usiaKehamilanStr);
-
-    // Jika tidak ada data, return kosong (TIDAK GENERATE OTOMATIS)
-    if (mingguAwal == 0) {
-      print('⚠️ Usia kehamilan tidak ditemukan, jadwal ANC tetap kosong');
-      return;
-    }
-
-    print('✅ Gunakan usia kehamilan: $mingguAwal minggu');
-
-    _jadwalANC.clear();
-
-    // Jadwal ANC standar berdasarkan rekomendasi
-    final jadwalStandar = [
-      {
-        'minggu': '4',
-        'judul': 'Kunjungan ANC Pertama',
-        'catatan': 'Pemeriksaan awal, konseling, tes laboratorium dasar',
-      },
-      {
-        'minggu': '8',
-        'judul': 'Pemeriksaan Trimester 1',
-        'catatan': 'USG pertama, screening kelainan kongenital',
-      },
-      {
-        'minggu': '12',
-        'judul': 'Akhir Trimester 1',
-        'catatan': 'Pemeriksaan lengkap, imunisasi TT pertama',
-      },
-      {
-        'minggu': '16',
-        'judul': 'Awal Trimester 2',
-        'catatan': 'Pemeriksaan rutin, screening gestational diabetes',
-      },
-      {
-        'minggu': '20',
-        'judul': 'USG Morfologi',
-        'catatan': 'USG detail anatomi janin, pertumbuhan organ',
-      },
-      {
-        'minggu': '24',
-        'judul': 'Pemeriksaan Rutin',
-        'catatan': 'Pemeriksaan tekanan darah, berat badan, tinggi fundus',
-      },
-      {
-        'minggu': '28',
-        'judul': 'Awal Trimester 3',
-        'catatan': 'Imunisasi TT kedua, pemeriksaan anemia',
-      },
-      {
-        'minggu': '32',
-        'judul': 'Pemantauan Pertumbuhan',
-        'catatan': 'USG pertumbuhan, posisi janin, persiapan persalinan',
-      },
-      {
-        'minggu': '36',
-        'judul': 'Persiapan Persalinan',
-        'catatan': 'Pemeriksaan final, posisi janin, rencana persalinan',
-      },
-      {
-        'minggu': '38',
-        'judul': 'Kunjungan Pra-Persalinan',
-        'catatan': 'Monitoring akhir, tanda-tanda persalinan',
-      },
-      {
-        'minggu': '40',
-        'judul': 'Perkiraan Persalinan',
-        'catatan': 'Hari perkiraan lahir, monitoring intensif',
-      },
-    ];
-
-    final now = DateTime.now();
-
-    for (var jadwal in jadwalStandar) {
-      final mingguJadwal = int.parse(jadwal['minggu']!);
-
-      // Hanya tambah jadwal jika minggu jadwal >= minggu awal
-      if (mingguJadwal >= mingguAwal) {
-        // Hitung tanggal: sekarang + (minggu jadwal - minggu awal) * 7 hari
-        final hariTambahan = (mingguJadwal - mingguAwal) * 7;
-        final tanggalJadwal = now.add(Duration(days: hariTambahan));
-
-        _jadwalANC.add({
-          'minggu': jadwal['minggu']!,
-          'judul': jadwal['judul']!,
-          'tanggal':
-              '${tanggalJadwal.year}-${tanggalJadwal.month.toString().padLeft(2, '0')}-${tanggalJadwal.day.toString().padLeft(2, '0')}',
-          'catatan': jadwal['catatan']!,
-        });
-      }
-    }
-
-    print('📅 Jadwal ANC digenerate: ${_jadwalANC.length} jadwal');
-  }
-
-  /// Helper: Extract minggu kehamilan dari string
-  int _extractMingguKehamilan(String usiaKehamilanStr) {
-    if (usiaKehamilanStr.isEmpty) return 0;
-
-    // Coba berbagai format:
-    // "20 minggu", "20", "Minggu 20", "20 mgg"
-    final patterns = [
-      RegExp(r'(\d+)\s*minggu', caseSensitive: false),
-      RegExp(r'minggu\s*(\d+)', caseSensitive: false),
-      RegExp(r'(\d+)\s*mgg', caseSensitive: false),
-      RegExp(r'(\d+)'), // Cuma angka
-    ];
-
-    for (var pattern in patterns) {
-      final match = pattern.firstMatch(usiaKehamilanStr);
-      if (match != null) {
-        final minggu = int.tryParse(match.group(1)!);
-        if (minggu != null && minggu > 0 && minggu <= 42) {
-          return minggu;
-        }
-      }
-    }
-
-    return 0;
   }
 
   /// Tambah jadwal ANC baru
@@ -541,7 +399,7 @@ class DataRepository with ChangeNotifier {
   }
 
   // =======================================================
-  // METHOD UNTUK ANALISIS DATA - PERBAIKAN
+  // METHOD UNTUK ANALISIS DATA
   // =======================================================
 
   List<double> getPerkembanganBeratBadan() {
@@ -742,14 +600,6 @@ class DataRepository with ChangeNotifier {
   // =======================================================
   // METHOD TAMBAHAN UNTUK DEBUG
   // =======================================================
-
-  /// Force regenerate jadwal ANC
-  Future<void> forceRegenerateJadwalANC() async {
-    print('🔄 Force regenerate jadwal ANC...');
-    _generateJadwalANCOtomatis();
-    await _saveToStorage();
-    notifyListeners();
-  }
 
   /// Debug semua data
   void debugAllData() {

@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
-import '../services/data_repository.dart';
+import '../services/data_repository.dart' as repo; // Tambahkan alias
 
 class InputDataIbuPage extends StatefulWidget {
   const InputDataIbuPage({super.key});
@@ -14,7 +14,8 @@ class InputDataIbuPage extends StatefulWidget {
 
 class _InputDataIbuPageState extends State<InputDataIbuPage> {
   final _formKey = GlobalKey<FormState>();
-  final DataRepository _dataRepository = DataRepository();
+  final repo.DataRepository _dataRepository =
+      repo.DataRepository(); // Gunakan alias
 
   final tekananDarahController = TextEditingController();
   final beratBadanController = TextEditingController();
@@ -40,6 +41,8 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
   Uint8List? _webFotoUSG;
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
+  bool _isUploadingImage = false;
+  double _uploadProgress = 0.0;
 
   // Variabel untuk mode edit jadwal
   int? _editingJadwalIndex;
@@ -76,7 +79,7 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
 
   @override
   Widget build(BuildContext context) {
-    final jadwalANC = _dataRepository.jadwalANC;
+    final jadwalANC = _dataRepository.jadwalANC; // Tetap gunakan seperti biasa
 
     return Scaffold(
       appBar: AppBar(
@@ -198,7 +201,7 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
   }
 
   // =======================================================
-  // WIDGET BUILDING METHODS - NEW UI
+  // WIDGET BUILDING METHODS
   // =======================================================
 
   Widget _buildInfoCard() {
@@ -416,12 +419,47 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
   }
 
   Widget _buildJadwalList(List<Map<String, String>> jadwalANC) {
+    if (jadwalANC.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.calendar_today, size: 48, color: Colors.grey[400]),
+            const SizedBox(height: 8),
+            Text(
+              "Belum ada jadwal ANC",
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Tambahkan jadwal ANC pertama Anda",
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Jadwal ANC Saat Ini:",
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              "Jadwal ANC Saat Ini:",
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            Text(
+              "Total: ${jadwalANC.length} jadwal",
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         ...jadwalANC.asMap().entries.map((entry) {
@@ -431,7 +469,23 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
             margin: const EdgeInsets.symmetric(vertical: 4),
             elevation: 1,
             child: ListTile(
-              leading: const Icon(Icons.event, color: Colors.purple),
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.purple[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(
+                    jadwal['minggu']!,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.purple,
+                    ),
+                  ),
+                ),
+              ),
               title: Text(
                 jadwal['judul']!,
                 style: const TextStyle(fontWeight: FontWeight.w600),
@@ -441,10 +495,11 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
                 children: [
                   Text('Minggu ke-${jadwal['minggu']}'),
                   Text('Tanggal: ${jadwal['tanggal']}'),
-                  Text(
-                    jadwal['catatan']!,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
+                  if (jadwal['catatan']!.isNotEmpty)
+                    Text(
+                      jadwal['catatan']!,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
                 ],
               ),
               trailing: Row(
@@ -603,6 +658,26 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
+
+        // Progress Bar untuk Upload Gambar
+        if (_isUploadingImage) ...[
+          Column(
+            children: [
+              LinearProgressIndicator(
+                value: _uploadProgress,
+                backgroundColor: Colors.grey[300],
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.red),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Mengupload gambar... ${(_uploadProgress * 100).toStringAsFixed(0)}%',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ],
+
         Container(
           width: double.infinity,
           height: 200,
@@ -627,7 +702,7 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
                     ),
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
-                      onPressed: _uploadFoto,
+                      onPressed: _isUploadingImage ? null : _uploadFoto,
                       icon: const Icon(Icons.add_photo_alternate),
                       label: const Text("Upload Foto USG"),
                       style: ElevatedButton.styleFrom(
@@ -667,13 +742,15 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
                             size: 16,
                             color: Colors.white,
                           ),
-                          onPressed: () => setState(() {
-                            if (kIsWeb) {
-                              _webFotoUSG = null;
-                            } else {
-                              _fotoUSG = null;
-                            }
-                          }),
+                          onPressed: _isUploadingImage
+                              ? null
+                              : () => setState(() {
+                                  if (kIsWeb) {
+                                    _webFotoUSG = null;
+                                  } else {
+                                    _fotoUSG = null;
+                                  }
+                                }),
                         ),
                       ),
                     ),
@@ -685,7 +762,7 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: _uploadFoto,
+              onPressed: _isUploadingImage ? null : _uploadFoto,
               icon: const Icon(Icons.camera_alt),
               label: const Text("Ganti Foto"),
               style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
@@ -795,7 +872,7 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
   }
 
   // =======================================================
-  // EXISTING METHODS (Tetap sama)
+  // METHODS UNTUK JADWAL ANC
   // =======================================================
 
   void _editJadwal(int index, Map<String, String> jadwal) {
@@ -909,14 +986,36 @@ class _InputDataIbuPageState extends State<InputDataIbuPage> {
         ),
       );
     } else {
+      setState(() {
+        _isUploadingImage = true;
+        _uploadProgress = 0.0;
+      });
+
+      // Simulasi proses upload dengan progress
+      for (int i = 0; i <= 10; i++) {
+        await Future.delayed(const Duration(milliseconds: 200));
+        setState(() {
+          _uploadProgress = i / 10;
+        });
+      }
+
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         maxWidth: 1200,
         maxHeight: 1200,
         imageQuality: 80,
       );
+
+      setState(() {
+        _isUploadingImage = false;
+        _uploadProgress = 0.0;
+      });
+
       if (image != null) {
         setState(() => _fotoUSG = File(image.path));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Foto USG berhasil diupload!')),
+        );
       }
     }
   }
