@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Dec 18, 2025 at 02:22 PM
+-- Generation Time: Dec 18, 2025 at 02:33 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -57,22 +57,6 @@ INSERT INTO `data_ibu` (`id`, `tekanan_darah`, `berat_badan`, `keluhan`, `perger
 -- --------------------------------------------------------
 
 --
--- Table structure for table `fcm_tokens`
---
-
-CREATE TABLE `fcm_tokens` (
-  `id` int NOT NULL,
-  `id_ibu` int NOT NULL,
-  `fcm_token` varchar(255) NOT NULL,
-  `device_info` varchar(255) DEFAULT NULL,
-  `is_active` tinyint(1) DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `jadwal_anc`
 --
 
@@ -117,23 +101,6 @@ INSERT INTO `jurnal_ibu` (`id`, `judul`, `tanggal`, `catatan`, `created_at`) VAL
 -- --------------------------------------------------------
 
 --
--- Table structure for table `notification_log`
---
-
-CREATE TABLE `notification_log` (
-  `id` int NOT NULL,
-  `id_jadwal` int DEFAULT NULL,
-  `id_ibu` int NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `body` text NOT NULL,
-  `sent_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `status` enum('sent','failed') DEFAULT 'sent',
-  `fcm_response` text
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `profil_ibu`
 --
 
@@ -165,15 +132,6 @@ ALTER TABLE `data_ibu`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `fcm_tokens`
---
-ALTER TABLE `fcm_tokens`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_ibu_token` (`id_ibu`,`fcm_token`),
-  ADD KEY `idx_fcm_token` (`fcm_token`),
-  ADD KEY `idx_ibu_active` (`id_ibu`,`is_active`);
-
---
 -- Indexes for table `jadwal_anc`
 --
 ALTER TABLE `jadwal_anc`
@@ -184,15 +142,6 @@ ALTER TABLE `jadwal_anc`
 --
 ALTER TABLE `jurnal_ibu`
   ADD PRIMARY KEY (`id`);
-
---
--- Indexes for table `notification_log`
---
-ALTER TABLE `notification_log`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_notification_ibu` (`id_ibu`),
-  ADD KEY `idx_notification_jadwal` (`id_jadwal`),
-  ADD KEY `idx_notification_status` (`status`,`sent_at`);
 
 --
 -- Indexes for table `profil_ibu`
@@ -211,12 +160,6 @@ ALTER TABLE `data_ibu`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
--- AUTO_INCREMENT for table `fcm_tokens`
---
-ALTER TABLE `fcm_tokens`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `jadwal_anc`
 --
 ALTER TABLE `jadwal_anc`
@@ -229,33 +172,10 @@ ALTER TABLE `jurnal_ibu`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
--- AUTO_INCREMENT for table `notification_log`
---
-ALTER TABLE `notification_log`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `profil_ibu`
 --
 ALTER TABLE `profil_ibu`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `fcm_tokens`
---
-ALTER TABLE `fcm_tokens`
-  ADD CONSTRAINT `fcm_tokens_ibfk_1` FOREIGN KEY (`id_ibu`) REFERENCES `profil_ibu` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `notification_log`
---
-ALTER TABLE `notification_log`
-  ADD CONSTRAINT `notification_log_ibfk_1` FOREIGN KEY (`id_ibu`) REFERENCES `profil_ibu` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `notification_log_ibfk_2` FOREIGN KEY (`id_jadwal`) REFERENCES `jadwal_anc` (`id`) ON DELETE SET NULL;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
